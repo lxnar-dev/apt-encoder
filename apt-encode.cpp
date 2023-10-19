@@ -13,13 +13,15 @@ template <typename T> constexpr T max(T val1, T val2) {
   return val1 > val2 ? val1 : val2;
 }
 // Constants and config
-
 constexpr size_t CARRIER = 2400;
 constexpr size_t BAUD = 4160;
 constexpr size_t OVERSAMPLE = 3;
 
+// Sync words for the left and right images
+
 constexpr const char *SYNCA = "000011001100110011001100110011000000000";
 constexpr const char *SYNCB = "000011100111001110011100111001110011100";
+
 // Image
 class Image {
 public:
@@ -66,14 +68,17 @@ void write_value(uint8_t value) {
     sn++;
   }
 }
-
 int main(int argc, char **argv) {
   // TODO: Improve command line argument parsing
 
+  // If there are no arguments, print usage and return.
   if (argc < 2) {
     printf("Usage: %s ./image1.pgm ./image2.pgm\n", argv[0]);
     return 1;
   }
+
+  // If there are two images, use them as the left and right images
+  // respectively, otherwise use the same image for both channels.
 
   Image img1(argv[1]);
   Image img2(argv[argc < 3 ? 1 : 2]);
@@ -96,43 +101,38 @@ int main(int argc, char **argv) {
     }
     // Telemetry A
     for (size_t i = 0; i < 45; i++) {
-            size_t wedge = frame_line / 8;
+      size_t wedge = frame_line / 8;
       auto v = 0;
       if (wedge < 8) {
         wedge++;
-        v = (int)(255.0 * (wedge % 8 / 8.0));
+        v = (int)(255.0 * ((wedge % 8) / 8.0));
       }
       write_value(v);
     }
-
     // Sync B
     for (size_t i = 0; i < strlen(SYNCB); i++)
       write_value(SYNCB[i] == '0' ? 0 : 255);
-
     // Space B
     for (size_t i = 0; i < 47; i++)
       write_value(255);
-
     // Image B
-    for (size_t i = 0; i < img2.width(); i++) {
+    for (size_t i = 0; i < 909; i++) {
       if (line < img2.height())
         write_value(img2.getPixel(i, line));
       else
         write_value(0);
     }
-
     // Telemetry B
     for (size_t i = 0; i < 45; i++) {
       size_t wedge = frame_line / 8;
       auto v = 0;
       if (wedge < 8) {
         wedge++;
-        v = (int)(255.0 * (wedge % 8 / 8.0));
+        v = (int)(255.0 * ((wedge % 8) / 8.0));
       }
       write_value(v);
     }
   }
-
   img1.free();
   img2.free();
   return 0;
