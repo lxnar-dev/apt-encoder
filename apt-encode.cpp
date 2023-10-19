@@ -41,7 +41,7 @@ Image::Image(const char *path) {
     char buf[2];
     fread(buf, 1, 2, f);
   }
-  fscanf(f, "%lu %lu %lu", &width, &m_height, &maxValue);
+  fscanf(f, "%zu %zu %zu", &width, &m_height, &maxValue);
   m_pixels = (uint8_t *)malloc(width * m_height);
   for (size_t i = 0; i < m_height * width; i++) {
     fscanf(f, "%hhu", &m_pixels[i]);
@@ -96,3 +96,44 @@ int main(int argc, char **argv) {
     }
     // Telemetry A
     for (size_t i = 0; i < 45; i++) {
+            size_t wedge = frame_line / 8;
+      auto v = 0;
+      if (wedge < 8) {
+        wedge++;
+        v = (int)(255.0 * (wedge % 8 / 8.0));
+      }
+      write_value(v);
+    }
+
+    // Sync B
+    for (size_t i = 0; i < strlen(SYNCB); i++)
+      write_value(SYNCB[i] == '0' ? 0 : 255);
+
+    // Space B
+    for (size_t i = 0; i < 47; i++)
+      write_value(255);
+
+    // Image B
+    for (size_t i = 0; i < img2.width(); i++) {
+      if (line < img2.height())
+        write_value(img2.getPixel(i, line));
+      else
+        write_value(0);
+    }
+
+    // Telemetry B
+    for (size_t i = 0; i < 45; i++) {
+      size_t wedge = frame_line / 8;
+      auto v = 0;
+      if (wedge < 8) {
+        wedge++;
+        v = (int)(255.0 * (wedge % 8 / 8.0));
+      }
+      write_value(v);
+    }
+  }
+
+  img1.free();
+  img2.free();
+  return 0;
+}
